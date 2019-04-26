@@ -14,6 +14,9 @@
 #include <sys/poll.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
 
 #define DATA "Half a league, half a league . . ."
 
@@ -69,20 +72,32 @@ int main(int argc, char *argv[])
 
 		if(fds[0].revents & POLLIN)
 		{
+			
 			int c = read(0,keyboardbuf,sizeof(keyboardbuf));
 			if(c < 0)
 				perror("Read from keyboard");
 			else
 				write(sock,keyboardbuf,c);
+			
 		}
 		if(fds[1].revents & POLLIN)
 		{
+			
 			int c = read(sock,socketbuf,sizeof(socketbuf));
 			if(c < 0)
 				perror("Read from socket");
+			else if (c == 0)
+			{
+				char* msg = "Lost connection to server...\n";
+				write(1,msg,strlen(msg));
+				break;
+			}
 			else
 				write(1,socketbuf,c);
+			
+			//fflush(stdout);
 		}
+		
 		//getchar();
 	}
 	  

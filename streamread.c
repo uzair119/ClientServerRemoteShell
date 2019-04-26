@@ -152,17 +152,84 @@ int main()
 				{
 					char result[1024];
 					token = strtok(NULL," ");
-					long sum = 0;			//storing long value of sum
+					double sum = 0;			//storing double value of sum
 					while(token != NULL)		//loop ends when token reaches end of string
 					{
-						sum += atol(token);	//convert string token to integer and add to sum
+						sum += atof(token);	//convert string token to integer and add to sum
 						token = strtok(NULL," ");
 					}
-					int length = sprintf(result,"%ld\n",sum); //store the sum in the result array. Length gives us the 		number of characters written to the char array.
+					int length = sprintf(result,"%.2f\n",sum); //store the sum in the result array. Length gives us the 		number of characters written to the char array.
 					write(1,result,length);	//output the result on screen
 					write(msgsock,result,length);
 				}
-		
+
+				else if(strcmp(token,"SUB") == 0 || strcmp(token,"sub") == 0)
+				{
+					char result[1024];
+					token = strtok(NULL," ");
+					double sum = 0;
+					if(token != NULL)
+						sum = atof(token); //storing double value of sum
+					token = strtok(NULL," ");			
+					while(token != NULL)		//loop ends when token reaches end of string
+					{
+						sum -= atof(token);	//convert string token to integer and subtract from sum
+						token = strtok(NULL," ");
+					}
+					int length = sprintf(result,"%.2f\n",sum); //store the sum in the result array. Length gives us the 		number of characters written to the char array.
+					write(1,result,length);	//output the result on screen
+					write(msgsock,result,length);
+				}
+
+				else if(strcmp(token,"MUL") == 0 || strcmp(token,"mul") == 0)
+				{
+					char result[1024];
+					token = strtok(NULL," ");
+					double sum = 1;			//storing double value of sum
+					while(token != NULL)		//loop ends when token reaches end of string
+					{
+						sum *= atof(token);	//convert string token to integer and multiply to sum
+						token = strtok(NULL," ");
+					}
+					int length = sprintf(result,"%.2f\n",sum); //store the multiple in the result array. Length gives us the 		number of characters written to the char array.
+					write(1,result,length);	//output the result on screen
+					write(msgsock,result,length);
+				}
+
+				else if(strcmp(token,"DIV") == 0 || strcmp(token,"div") == 0)
+				{
+					char result[1024];
+					int flag = 1;
+					token = strtok(NULL," ");
+					double sum = 0;
+					if(token != NULL)
+						sum = atof(token); //storing double value of sum
+					token = strtok(NULL," ");
+					while(token != NULL)		//loop ends when token reaches end of string
+					{
+						if(atof(token) == 0)
+						{
+							write(msgsock,"Cannot divide by 0\n\0",20);
+							flag = 0;
+							break;
+						}
+						
+						sum /= atof(token);	//convert string token to integer and subtract from sum
+						token = strtok(NULL," ");
+					}
+					if(flag)
+					{
+						int length = sprintf(result,"%.2f\n",sum); //store the sum in the result array. Length gives us the 		number of characters written to the char array.
+						write(1,result,length);	//output the result on screen
+						write(msgsock,result,length);
+					}
+				}
+
+				else if(strcmp(token,"HELP\n") == 0 || strcmp(token,"help\n") == 0)
+				{
+					char* temp = "List of Commands:\nADD <arguments>\nSUB <arguments>\nDIV <arguments>\nMUL <arguments>\nRUN <program name>\nKILL <process name OR pid>\nLIST\nEXIT\n\0";
+        			write(msgsock,temp,strlen(temp));
+				}
 				else if(strcmp(token,"RUN") == 0 || strcmp(token,"run") == 0)
 				{
 					token = strtok(NULL," ");

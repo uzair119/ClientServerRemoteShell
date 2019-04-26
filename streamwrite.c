@@ -11,6 +11,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define DATA "Half a league, half a league . . ."
 
@@ -26,8 +29,8 @@ int main(int argc, char *argv[])
 	int sock;
 	struct sockaddr_in server;
 	struct hostent *hp;
-	char buf[10000];
-	char readbuff[1000];
+	char socketbuf[10000];
+	char keyboardbuf[10000];
 	/* Create socket */
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -48,14 +51,38 @@ int main(int argc, char *argv[])
 		perror("connecting stream socket");
 		exit(1);
 	}
+	int rv;
+	struct pollfd fds[2];
+
+	fds[0].fd = 0;
+	fds[0].events = POLLIN;
+
+	fds[1].fd = sock;
+	fds[1].events = POLLIN;
+
 	while(1){
 		
-		int count = read(0,readbuff,1000);
-		
-		if (write(sock, readbuff, count) < 0)
-			perror("writing on stream socket");
-		count = read(sock,buf,sizeof(buf));
-		write(1,buf,count);
+
+		int rv = poll(fds,2,-1); //INFINITE TIMEOUT
+		if(rv == -1)
+			perror("poll");
+
+		if(fds[0].revents & POLLIN)
+		{
+			int c = read(0,keyboardbuf,sizeof(keyboardbuf));
+			if(c < 0)
+				perror("Read from keyboard");
+			else
+				write(sock,keyboardbuf,c);
+		}
+		if(fds[1].revents & POLLIN)
+		{
+			int c = read(sock,socketbuf,sizeof(socketbuf));
+			if(c < 0)
+				perror("Read from socket");
+			else
+				write(1,socketbuf,c);
+		}
 		//getchar();
 	}
 	  

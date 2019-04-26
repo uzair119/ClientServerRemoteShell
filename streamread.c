@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
+#include <arpa/inet.h>
+
 
 #define TRUE 1
 
@@ -87,8 +89,18 @@ int main()
 			perror("accept");
 		else 
 		{
-			
+			struct sockaddr_in addr;
+			socklen_t addr_len = sizeof(addr);
+			int err = getpeername(msgsock, (struct sockaddr *) &addr, &addr_len);
+			if(err == -1)
+				perror("Get peername");
+			printf("%s\n",inet_ntoa(addr.sin_addr));
+
 			int c = fork();
+
+			
+
+
 			if(c < 0)
 				perror("fork");
 			else if (c == 0)

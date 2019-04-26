@@ -20,8 +20,8 @@
 #include <fcntl.h>
 #include <time.h>
 #include <arpa/inet.h>
-
-
+#include <signal.h>
+#include <errno.h>
 #define TRUE 1
 
 
@@ -229,6 +229,28 @@ int main()
 				{
 					char* temp = "List of Commands:\nADD <arguments>\nSUB <arguments>\nDIV <arguments>\nMUL <arguments>\nRUN <program name>\nKILL <process name OR pid>\nLIST\nEXIT\n\0";
         			write(msgsock,temp,strlen(temp));
+				}
+				else if(strcmp(token,"KILL") == 0 || strcmp(token,"kill") == 0)
+				{
+					token = strtok(NULL," ");
+					for(int y = 0; y < procnum; y++)
+					{
+						token[strlen(token)-1] = '\0';
+						if((proclist[y].pid == atoi(token) && !strcmp(proclist[y].status,"ACTIVE") && atoi(token) != 0 )|| !strcmp(proclist[y].name,token))
+						{
+							if(kill(proclist[y].pid,SIGTERM) == -1)
+							{
+								char* msg = strerror(errno);
+								strcat(msg,"\n");
+								write(msgsock,msg,strlen(msg));
+							}
+							else
+							{
+								write(msgsock,"Success\n\0",9);
+							}
+							break;
+						}
+					}
 				}
 				else if(strcmp(token,"RUN") == 0 || strcmp(token,"run") == 0)
 				{

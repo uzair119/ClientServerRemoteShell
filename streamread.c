@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <errno.h>
+#include <pthread.h>
 #define TRUE 1
 
 
@@ -35,9 +36,49 @@ typedef struct
 
 }Process;
 
+
+typedef struct
+{
+    char ip[20];
+	in_port_t port;
+}Client;
+
+
+int client = 0;
+Client clients[5];
 void handle_sigchld(int sig) 
 { 
-    printf("Caught signal %d\n", sig);
+    //printf("Caught signal %d\n", sig);
+}
+
+void *terminalthread(void *arg) 
+{ 
+	char buff[1024];
+	while(1)
+	{
+    	int rval;
+		if ((rval = read(0, buff, sizeof(buff))) < 0)
+			perror("server terminal input");
+		buff[rval-1] = '\0';
+		char* token = strtok(buff," ");
+		if(token == NULL)
+			continue;
+		char msg[10000];
+		char tmp[100];
+		if(strcmp(token,"list") == 0 || strcmp(token,"LIST") == 0)
+		{
+			sprintf(msg,"Client IP\t\tPort\n");
+			for(int i = 0; i < client; i++)
+			{
+				if(clients[i].ip[strlen(clients[i].ip)-1]=='\n')
+					clients[i].ip[strlen(clients[i].ip)-1] = '\0';
+				sprintf(tmp,"%s\t\t%d\n",clients[i].ip,clients[i].port);
+				strcat(msg,tmp);
+			}
+			write(1,msg,strlen(msg));
+		}
+	}
+    return NULL; 
 }
 
 char* printProcess(Process p);
@@ -57,7 +98,22 @@ int main()
 	char buf[1024];
 	int rval;
 	int i;
+
+
+	// Thread id
+	pthread_t threadId;
+ 
+	// Create a thread that will funtion threadFunc()
+	int err = pthread_create(&threadId, NULL, &terminalthread, NULL);
 	
+	if(err)
+		perror("thread");
+
+	err = pthread_detach(threadId);
+
+	if(err)
+		perror("thread");
+
 	/* Create socket */
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -79,7 +135,11 @@ int main()
 		exit(1);
 	}
 	printf("Socket has port #%d\n", ntohs(server.sin_port));
-	fflush(stdout);
+	//fflush(stdout);
+
+
+	
+
 
 	/* Start accepting connections */
 	listen(sock, 5);
@@ -94,8 +154,9 @@ int main()
 			int err = getpeername(msgsock, (struct sockaddr *) &addr, &addr_len);
 			if(err == -1)
 				perror("Get peername");
-			printf("%s\n",inet_ntoa(addr.sin_addr));
-
+			sprintf(clients[client].ip,"%s\n",inet_ntoa(addr.sin_addr));
+			clients[client].port = addr.sin_port;
+			client++;
 			int c = fork();
 
 			
@@ -131,8 +192,6 @@ int main()
 					}
 				}
 			}
-
-
 
 
 			//write(1,buf,rval);
@@ -239,6 +298,7 @@ int main()
 							kill(proclist[y].pid,SIGTERM);
 					}
 					close(msgsock);
+					break;
 				}
 				else if(strcmp(token,"KILL") == 0 || strcmp(token,"kill") == 0)
 				{

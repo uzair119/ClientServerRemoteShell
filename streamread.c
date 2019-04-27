@@ -141,7 +141,7 @@ int main()
 				printf("Ending connection\n");
 			else
 			{
-				buf[rval] = '\0';       //append NULL character at the end of the input string, since read doesn't place it by default
+				buf[rval-1] = '\0';       //append NULL character at the end of the input string, since read doesn't place it by default
 				/*if(strcmp(buff,"0\n") == 0)	//check if a single 0 is entered, signalling termination
 					return 1;
 				*/		
@@ -225,20 +225,33 @@ int main()
 					}
 				}
 
-				else if(strcmp(token,"HELP\n") == 0 || strcmp(token,"help\n") == 0)
+				else if(strcmp(token,"HELP") == 0 || strcmp(token,"help") == 0)
 				{
 					char* temp = "List of Commands:\nADD <arguments>\nSUB <arguments>\nDIV <arguments>\nMUL <arguments>\nRUN <program name>\nKILL <process name OR pid>\nLIST\nEXIT\n\0";
         			write(msgsock,temp,strlen(temp));
+				}
+
+				else if(strcmp(token,"EXIT") == 0 || strcmp(token,"exit") == 0)
+				{
+					for(int y = 0; y < procnum; y++)
+					{
+						if(!strcmp(proclist[y].status,"ACTIVE"))
+							kill(proclist[y].pid,SIGTERM);
+					}
+					close(msgsock);
 				}
 				else if(strcmp(token,"KILL") == 0 || strcmp(token,"kill") == 0)
 				{
 					token = strtok(NULL," ");
 					for(int y = 0; y < procnum; y++)
 					{
-						token[strlen(token)-1] = '\0';
-						if((proclist[y].pid == atoi(token) && !strcmp(proclist[y].status,"ACTIVE") && atoi(token) != 0 )|| !strcmp(proclist[y].name,token))
+						write(1,"1",1);
+						if(token[strlen(token)-1] == '\n')
+							token[strlen(token)-1] = '\0'; //The last character of the token is \n. I've replaced it with the null character so it can be used in the next instruction.
+						if((proclist[y].pid == atoi(token) && !strcmp(proclist[y].status,"ACTIVE") && atoi(token) != 0 )|| (!strcmp(proclist[y].name,token)  && !strcmp(proclist[y].status,"ACTIVE")))
 						{
-							if(kill(proclist[y].pid,SIGTERM) == -1)
+							
+							if(kill(proclist[y].pid,SIGTERM) < 0)
 							{
 								char* msg = strerror(errno);
 								strcat(msg,"\n");
@@ -314,7 +327,7 @@ int main()
 					}
 					//write(1,"1.\n",2);
 				}
-				else if(strcmp(token,"LIST\n") == 0 || strcmp(token,"list\n") == 0)
+				else if(strcmp(token,"LIST") == 0 || strcmp(token,"list") == 0)
 				{
 					//write(1,"PLIST\n",6);
 					char msg[10000];
